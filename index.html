@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>City Population Migration Model | Team Algovision</title>
+  <style>
+/* ===== Theme ===== */
+:root {
+  --navy: #0b1f3a;
+  --blue: #1d4ed8;
+  --sky: #38bdf8;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --card: rgba(255, 255, 255, 0.78);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, #eef4ff, #ffffff 60%);
+  line-height: 1.5;
+}
+
+section { padding: 72px 6vw; scroll-margin-top: 70px; }
+section.alt { background: #f5f8ff; }
+
+h1, h2, h3 { font-weight: 700; margin: 0 0 12px; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); color: var(--navy); }
+h3 { font-size: 1.1rem; color: var(--navy); }
+
+/* ===== Navigation ===== */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 6vw;
+  background: rgba(11, 31, 58, 0.92);
+  backdrop-filter: blur(10px);
+  color: #fff;
+}
+.brand { font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.logo { background: var(--sky); color: var(--navy); border-radius: 8px; padding: 2px 8px; }
+.navbar nav { display: flex; gap: 22px; }
+.navbar nav a { color: #cbd5e1; text-decoration: none; font-size: 0.95rem; }
+.navbar nav a:hover { color: #fff; }
+.menu-btn { display: none; background: none; border: 0; color: #fff; font-size: 1.5rem; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .menu-btn { display: block; }
+  .navbar nav {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; background: var(--navy); padding: 16px 6vw;
+  }
+  .navbar nav.open { display: flex; }
+}
+
+/* ===== Hero ===== */
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+  align-items: flex-start; padding-top: 110px;
+  background: linear-gradient(135deg, #0b1f3a, #1e3a8a);
+  color: #fff;
+}
+.badge {
+  background: rgba(56, 189, 248, 0.2); border: 1px solid var(--sky);
+  padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; margin-bottom: 18px;
+}
+.hero h1 { font-size: clamp(2rem, 5vw, 3.6rem); max-width: 800px; }
+.subtitle { color: #bfdbfe; font-weight: 600; }
+.lead { max-width: 640px; color: #e2e8f0; }
+
+.btn {
+  display: inline-block; padding: 12px 22px; border-radius: 12px;
+  border: 1px solid #fff; color: #fff; text-decoration: none; font-weight: 600;
+  margin: 12px 12px 0 0; background: transparent; cursor: pointer; font-size: 1rem;
+}
+.btn.primary { background: var(--sky); border-color: var(--sky); color: var(--navy); }
+.btn.ghost { color: var(--navy); border-color: var(--blue); }
+
+.flow { display: flex; align-items: center; gap: 14px; margin-top: 40px; flex-wrap: wrap; }
+.city-node {
+  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px; padding: 12px 18px; backdrop-filter: blur(6px);
+}
+.flow .arrow { color: var(--sky); font-size: 1.6rem; animation: pulse 1.6s infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(4px); }
+}
+
+/* ===== Cards & panels ===== */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.card {
+  background: var(--card); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 18px; padding: 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s;
+}
+.card:hover { transform: translateY(-3px); }
+.card .val { font-size: 1.5rem; font-weight: 700; color: var(--navy); }
+.card .sub { font-size: 0.9rem; color: var(--muted); }
+
+.panel {
+  background: #fff; border: 1px solid var(--line); border-radius: 18px;
+  padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+.note { color: var(--muted); font-size: 0.95rem; }
+
+.tip {
+  display: inline-flex; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--blue); color: #fff; font-size: 12px; align-items: center;
+  justify-content: center; margin-left: 6px; cursor: help; font-weight: 700; vertical-align: middle;
+}
+
+/* ===== Forms ===== */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.stays { margin-top: 16px; }
+label { display: block; font-size: 0.9rem; color: var(--muted); margin: 8px 0 4px; }
+input {
+  width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1;
+  border-radius: 10px; font-size: 1rem; font-family: inherit;
+}
+input:focus { outline: 2px solid var(--sky); }
+.stay { font-weight: 700; color: var(--blue); }
+.msg { padding: 10px 14px; border-radius: 10px; margin-top: 12px; display: none; }
+.msg.error { display: block; background: #fee2e2; color: #991b1b; }
+.msg.ok { display: block; background: #dcfce7; color: #166534; }
+.controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+input[type=range] { width: 260px; }
+
+/* ===== Tables ===== */
+.matrix-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 420px; margin-top: 10px; }
+th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: center; }
+th { background: #f1f6ff; color: var(--navy); }
+td.diag { background: #dbeafe; font-weight: 700; }
+.status-gain { color: #15803d; font-weight: 600; }
+.status-loss { color: #b91c1c; font-weight: 600; }
+.status-stable { color: var(--muted); font-weight: 600; }
+
+/* ===== Charts ===== */
+.chart-box { position: relative; height: 340px; }
+
+/* ===== Steady-state cards ===== */
+.hidden { display: none; }
+
+/* ===== Maths section ===== */
+details {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px 20px; margin-top: 16px;
+}
+summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+.matrix-block { margin: 14px 0; }
+.matrix-block h4 { margin: 0 0 6px; color: var(--navy); }
+.matrix-block table { min-width: 0; width: auto; }
+.matrix-block td { font-family: ui-monospace, Menlo, Consolas, monospace; padding: 6px 12px; }
+
+/* ===== Loading overlay ===== */
+.overlay {
+  position: fixed; inset: 0; background: rgba(11, 31, 58, 0.5);
+  display: none; align-items: center; justify-content: center; z-index: 100;
+  color: #fff; font-weight: 600;
+}
+.overlay.show { display: flex; }
+.spinner {
+  width: 44px; height: 44px; border: 4px solid #fff; border-top-color: transparent;
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.reveal { animation: fade 0.6s ease both; }
+@keyframes fade {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+footer { text-align: center; padding: 30px; color: var(--muted); font-size: 0.9rem; }
+
+@media (max-width: 600px) {
+  section { padding: 56px 5vw; }
+  input[type=range] { width: 100%; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand"><span class="logo">&#8644;</span> City Migration Model</div>
+  <button id="menuToggle" class="menu-btn" aria-label="Toggle menu">&#9776;</button>
+  <nav id="navLinks">
+    <a href="#home">Home</a>
+    <a href="#model">Model</a>
+    <a href="#simulation">Simulation</a>
+    <a href="#results">Results</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- 1. HERO -->
+  <section id="home" class="hero">
+    <span class="badge">Team Algovision</span>
+    <h1>Understand How Cities Change Over Time</h1>
+    <p class="subtitle">Predicting Population Movement Using Matrices, Diagonalization &amp; Data Visualization</p>
+    <p class="lead">Model population migration between cities using transition matrices, diagonalization and interactive simulations.</p>
+    <div>
+      <a class="btn primary" href="#simulation">Start Simulation</a>
+      <a class="btn" href="#model">Explore Model</a>
+    </div>
+    <div class="flow" aria-label="Three cities connected by migration arrows">
+      <span class="city-node">City A</span>
+      <span class="arrow">&#8644;</span>
+      <span class="city-node">City B</span>
+      <span class="arrow">&#8644;</span>
+      <span class="city-node">City C</span>
+    </div>
+  </section>
+
+  <!-- 2. MODEL OVERVIEW -->
+  <section id="model">
+    <h2>Project Overview</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Migration Matrix</h3>
+        <p>Represents population movement between cities.</p>
+      </div>
+      <div class="card">
+        <h3>Matrix Powers</h3>
+        <p>Predicts population after multiple years.</p>
+      </div>
+      <div class="card">
+        <h3>Steady State</h3>
+        <p>Finds the long-term population distribution.</p>
+      </div>
+      <div class="card">
+        <h3>Data Visualization</h3>
+        <p>Shows population changes through interactive charts.</p>
+      </div>
+    </div>
+    <p class="note">
+      The model is P(t+1) = M P(t), so P(n) = M<sup>n</sup> P(0). Diagonalization gives M<sup>n</sup> = P D<sup>n</sup> P<sup>-1</sup>.
+    </p>
+  </section>
+
+  <!-- 3. SIMULATION INPUTS -->
+  <section id="simulation" class="alt">
+    <h2>Simulation Dashboard</h2>
+
+    <div class="panel">
+      <h3>1. City Information</h3>
+      <div class="form-grid">
+        <div>
+          <label for="name0">City A name</label>
+          <input id="name0" type="text" placeholder="e.g. Riverton">
+          <label for="pop0">City A initial population</label>
+          <input id="pop0" type="number" min="0" placeholder="e.g. 500000">
+        </div>
+        <div>
+          <label for="name1">City B name</label>
+          <input id="name1" type="text" placeholder="e.g. Lakeview">
+          <label for="pop1">City B initial population</label>
+          <input id="pop1" type="number" min="0" placeholder="e.g. 300000">
+        </div>
+        <div>
+          <label for="name2">City C name</label>
+          <input id="name2" type="text" placeholder="e.g. Hillcrest">
+          <label for="pop2">City C initial population</label>
+          <input id="pop2" type="number" min="0" placeholder="e.g. 200000">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>2. Migration Rates (%)
+        <span class="tip" title="The percentage of a city's population that moves to another city in one year.">?</span>
+      </h3>
+      <p class="note">Each column represents the source city and each row represents the destination city. Enter the percentage of each source city's population that moves to each other city. The stay percentage is calculated automatically.</p>
+      <div class="form-grid">
+        <div><label for="r01">A &rarr; B</label><input id="r01" type="number" min="0" step="0.1" placeholder="10"></div>
+        <div><label for="r02">A &rarr; C</label><input id="r02" type="number" min="0" step="0.1" placeholder="5"></div>
+        <div><label for="r10">B &rarr; A</label><input id="r10" type="number" min="0" step="0.1" placeholder="5"></div>
+        <div><label for="r12">B &rarr; C</label><input id="r12" type="number" min="0" step="0.1" placeholder="10"></div>
+        <div><label for="r20">C &rarr; A</label><input id="r20" type="number" min="0" step="0.1" placeholder="10"></div>
+        <div><label for="r21">C &rarr; B</label><input id="r21" type="number" min="0" step="0.1" placeholder="5"></div>
+      </div>
+      <div class="form-grid stays">
+        <div>Stay in A: <span class="stay" id="stay0">&mdash;</span></div>
+        <div>Stay in B: <span class="stay" id="stay1">&mdash;</span></div>
+        <div>Stay in C: <span class="stay" id="stay2">&mdash;</span></div>
+      </div>
+      <div id="inputMsg" class="msg" role="alert"></div>
+    </div>
+
+    <div class="panel">
+      <h3>3. Migration Matrix
+        <span class="tip" title="A matrix M where entry (row i, column j) is the fraction of city j's population that moves to city i. Diagonal = population that stays.">?</span>
+      </h3>
+      <div class="matrix-wrap" id="matrixOut"><p class="note">Enter valid inputs to generate the matrix.</p></div>
+    </div>
+
+    <div class="panel">
+      <h3>4. Simulation Controls</h3>
+      <div class="controls">
+        <label for="yearsNum">Years</label>
+        <input id="yearsNum" type="number" min="1" max="100" value="10" style="width:90px">
+        <input id="yearsRange" type="range" min="1" max="100" value="10" aria-label="Number of years">
+      </div>
+      <div class="controls">
+        <button id="runBtn" class="btn primary">Run Simulation</button>
+        <button id="resetBtn" class="btn ghost">Reset</button>
+        <button id="exampleBtn" class="btn ghost">Load Example</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. RESULTS -->
+  <section id="results">
+    <h2>Results Dashboard</h2>
+    <p id="resultsEmpty" class="note">Run a simulation to see results.</p>
+
+    <div id="resultsContent" class="hidden">
+      <div class="grid" id="summaryCards"></div>
+
+      <div class="panel reveal">
+        <h3>Population Over Time</h3>
+        <div class="chart-box"><canvas id="popChart"></canvas></div>
+      </div>
+
+      <div class="panel reveal">
+        <h3>Year-by-Year Population</h3>
+        <div class="matrix-wrap" id="yearTableWrap"></div>
+      </div>
+
+      <div class="panel reveal">
+        <h3>Gain / Loss Analysis
+          <span class="tip" title="Because the total population is constant, comparing population shares shows which city gains or loses its relative size.">?</span>
+        </h3>
+        <div class="matrix-wrap" id="gainTableWrap"></div>
+      </div>
+
+      <div class="panel reveal">
+        <h3>Long-Term Population Distribution
+          <span class="tip" title="A steady state is a population distribution that remains unchanged after applying the migration matrix.">?</span>
+        </h3>
+        <div class="grid" id="steadyCards"></div>
+        <p class="note">
+          A steady state is a population distribution that remains unchanged after applying the migration matrix:
+          <strong>M P* = P*</strong>, which can be written <strong>M P* = 1 &middot; P*</strong>.
+          The steady-state vector corresponds to eigenvalue 1. Migration does not stop at steady state; the distribution simply stops changing.
+        </p>
+        <div id="steadyCheck"></div>
+      </div>
+
+      <details class="reveal">
+        <summary>Mathematics: Eigenvalues, Eigenvectors &amp; Diagonalization</summary>
+        <div id="eigenOut"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 5. ABOUT -->
+  <section id="about" class="alt">
+    <h2>About the Project</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Project</h3>
+        <p>City Population Migration Model</p>
+        <h3>Team</h3>
+        <p><strong>Algovision</strong></p>
+        <p>Team Leader: T. Revathi Naga Padmasri</p>
+        <p>Members: SK. Maneesha, CH. Janaki, K. Sravanthi, P. Bindhu</p>
+      </div>
+      <div class="card">
+        <h3>Mathematical Concepts</h3>
+        <p>Matrices, matrix powers, eigenvalues, eigenvectors, diagonalization, steady-state analysis.</p>
+        <h3>Technologies</h3>
+        <p>HTML, CSS, JavaScript, Chart.js</p>
+      </div>
+      <div class="card">
+        <h3>Limitations</h3>
+        <ul>
+          <li>Migration rates are assumed constant.</li>
+          <li>Births, deaths and external migration are not included.</li>
+          <li>Economic conditions, housing and government policy are not modeled.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">The model is a simplified mathematical framework, not an exact real-world forecast.</p>
+  </section>
+
+</main>
+
+<footer>&copy; Team Algovision &middot; City Population Migration Model</footer>
+
+<div id="loading" class="overlay" role="status" aria-live="polite">
+  <div class="spinner"></div><span>Calculating...</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+/* =====================================================================
+   City Population Migration Model
+   Convention: M is column-stochastic. M[i][j] = fraction of city j's
+   population that moves to city i in one year (diagonal = stays).
+   Each column sums to 1, so total population is conserved.
+   ===================================================================== */
+
+/* ---------- Mathematical engine ---------- */
+
+const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+
+/** Multiply two matrices: (A·B)[i][j] = Σ_k A[i][k]·B[k][j] */
+function matMul(A, B) {
+  return A.map(row => B[0].map((_, j) => row.reduce((s, a, k) => s + a * B[k][j], 0)));
+}
+
+/** Matrix power by repeated multiplication: M^n (n ≥ 0). */
+function matPow(M, n) {
+  let R = I3;
+  for (let k = 0; k < n; k++) R = matMul(R, M);
+  return R;
+}
+
+/** Matrix–vector product: returns M·v. */
+function matVec(M, v) {
+  return M.map(row => row.reduce((s, a, j) => s + a * v[j], 0));
+}
+
+/** Transpose a matrix (rows ↔ columns). */
+function transpose(M) {
+  return M[0].map((_, j) => M.map(row => row[j]));
+}
+
+/** Determinant of a 3×3 matrix (cofactor expansion along row 1). */
+function det3(A) {
+  const [[a, b, c], [d, e, f], [g, h, i]] = A;
+  return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+}
+
+/** Inverse of a 3×3 matrix via adjugate / determinant. Returns null if singular. */
+function inv3(A) {
+  const [[a, b, c], [d, e, f], [g, h, i]] = A;
+  const det = det3(A);
+  if (Math.abs(det) < 1e-12) return null;
+  const adj = [
+    [e * i - f * h, -(b * i - c * h), b * f - c * e],
+    [-(d * i - f * g), a * i - c * g, -(a * f - c * d)],
+    [d * h - e * g, -(a * h - b * g), a * e - b * d],
+  ];
+  return adj.map(r => r.map(x => x / det));
+}
+
+/** Cross product of two 3D vectors. Used to find the null vector of (M − λI). */
+function cross(u, v) {
+  return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+}
+
+function norm(v) { return Math.hypot(...v); }
+
+/**
+ * Eigenvalues of M.
+ * Because M is column-stochastic, λ = 1 is always an eigenvalue. Factoring it out
+ * of the characteristic polynomial λ³ − tr(M)λ² + c₁λ − det(M) gives
+ *   (λ − 1)(λ² + pλ + q), with p = 1 − tr(M), q = det(M).
+ * The remaining two roots come from the quadratic formula.
+ * Returns eigenvalues sorted descending, or null if they are complex.
+ */
+function eigenvalues(M) {
+  const tr = M[0][0] + M[1][1] + M[2][2];
+  const p = 1 - tr;
+  const q = det3(M);
+  const disc = p * p - 4 * q;
+  if (disc < -1e-12) return null; // complex eigenvalues: not handled in this build
+  const s = Math.sqrt(Math.max(disc, 0));
+  return [1, (-p + s) / 2, (-p - s) / 2].sort((x, y) => y - x);
+}
+
+/**
+ * Unit eigenvector for eigenvalue λ.
+ * Any two independent rows of (M − λI) are orthogonal to the eigenvector, so their
+ * cross product gives it directly. We choose the pair giving the largest magnitude
+ * for numerical stability.
+ */
+function eigenvector(M, lambda) {
+  const N = M.map((r, i) => r.map((x, j) => x - (i === j ? lambda : 0)));
+  let best = null, bestNorm = 0;
+  for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
+    const c = cross(N[i], N[j]);
+    const n = norm(c);
+    if (n > bestNorm) { bestNorm = n; best = c; }
+  }
+  if (!best || bestNorm < 1e-10) return null;
+  return best.map(x => x / bestNorm);
+}
+
+/**
+ * Diagonalization: M = P D P⁻¹.
+ * Columns of P are eigenvectors; D is diagonal with the eigenvalues.
+ * Returns null if diagonalization is not possible (complex or defective case).
+ */
+function diagonalize(M) {
+  const vals = eigenvalues(M);
+  if (!vals) return null;
+  const vecs = vals.map(l => eigenvector(M, l));
+  if (vecs.some(v => !v)) return null;
+  const P = transpose(vecs);
+  const Pinv = inv3(P);
+  if (!Pinv) return null;
+  const D = [[vals[0], 0, 0], [0, vals[1], 0], [0, 0, vals[2]]];
+  return { vals, vecs, P, D, Pinv };
+}
+
+/** M^n = P Dⁿ P⁻¹, computed from the diagonalization. */
+function matPowDiag(dg, n) {
+  const Dn = [[Math.pow(dg.vals[0], n), 0, 0], [0, Math.pow(dg.vals[1], n), 0], [0, 0, Math.pow(dg.vals[2], n)]];
+  return matMul(matMul(dg.P, Dn), dg.Pinv);
+}
+
+/**
+ * Steady state P*: the eigenvector for λ = 1, scaled so entries are positive and sum to 1.
+ * Falls back to power iteration if diagonalization is unavailable.
+ */
+function steadyState(M, dg, P0) {
+  if (dg) {
+    const k = dg.vals.findIndex(l => Math.abs(l - 1) < 1e-9);
+    let v = dg.vecs[k];
+    const s = v.reduce((a, b) => a + b, 0);
+    if (s < 0) v = v.map(x => -x);
+    const total = v.reduce((a, b) => a + b, 0);
+    return v.map(x => x / total);
+  }
+  let x = P0.map(p => p / P0.reduce((a, b) => a + b, 0));
+  for (let k = 0; k < 5000; k++) x = matVec(M, x);
+  return x;
+}
+
+/** Forward simulation P(t+1) = M P(t). Returns [P(0), P(1), ..., P(n)]. */
+function simulate(M, P0, years) {
+  const hist = [P0.slice()];
+  for (let t = 1; t <= years; t++) hist.push(matVec(M, hist[t - 1]));
+  return hist;
+}
+
+/* ---------- Input reading and validation ---------- */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const f = (x, d = 4) => Number(x).toFixed(d);
+const pctStr = x => (x * 100).toFixed(2) + '%';
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+/** Maps "from-to" keys to the input element ids for migration rates. */
+const RATE_IDS = { '0-1': 'r01', '0-2': 'r02', '1-0': 'r10', '1-2': 'r12', '2-0': 'r20', '2-1': 'r21' };
+
+/**
+ * Reads and validates all user inputs. Throws a user-friendly Error on invalid data.
+ * Returns { names, pop, R } where R[from][to] is a fraction (0–1).
+ */
+function readInputs() {
+  const names = [0, 1, 2].map(i => $('name' + i).value.trim());
+  if (names.some(n => !n)) throw new Error('Please complete all city inputs.');
+  if (new Set(names).size < 3) throw new Error('City names must be different.');
+
+  const pop = [0, 1, 2].map(i => $('pop' + i).value.trim());
+  if (pop.some(p => p === '')) throw new Error('Please complete all city inputs.');
+  const popNum = pop.map(Number);
+  if (popNum.some(p => !isFinite(p) || p < 0)) throw new Error('Please enter valid population values.');
+  if (popNum.reduce((a, b) => a + b, 0) <= 0) throw new Error('Please enter valid population values.');
+
+  const R = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (const key of Object.keys(RATE_IDS)) {
+    const raw = $(RATE_IDS[key]).value.trim();
+    if (raw === '') throw new Error('Please complete all migration rates.');
+    const v = Number(raw);
+    if (!isFinite(v)) throw new Error('Please enter valid migration rates.');
+    if (v < 0) throw new Error('Migration rates cannot be negative.');
+    const [a, b] = key.split('-').map(Number);
+    R[a][b] = v / 100;
+  }
+  for (let j = 0; j < 3; j++) {
+    const out = R[j][(j + 1) % 3] + R[j][(j + 2) % 3];
+    if (out > 1 + 1e-9) throw new Error(`Outgoing migration cannot exceed 100% (${names[j]}).`);
+  }
+  return { names, pop: popNum, R };
+}
+
+/** Builds the column-stochastic migration matrix M from the rate fractions R. */
+function buildMatrix(R) {
+  const M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (let j = 0; j < 3; j++) {
+    let out = 0;
+    for (let i = 0; i < 3; i++) {
+      if (i !== j) { M[i][j] = R[j][i]; out += R[j][i]; }
+    }
+    M[j][j] = 1 - out; // stay percentage
+  }
+  return M;
+}
+
+/* ---------- UI helpers ---------- */
+
+function showMsg(text, type) {
+  const el = $('inputMsg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+function clearMsg() { $('inputMsg').className = 'msg'; $('inputMsg').textContent = ''; }
+
+/** Renders the migration matrix with a column-sum check row. */
+function renderMatrix(M, names) {
+  const head = names.map(n => `<th>From ${esc(n)}</th>`).join('');
+  const rows = M.map((row, i) =>
+    `<tr><th>To ${esc(names[i])}</th>` +
+    row.map((v, j) => `<td class="${i === j ? 'diag' : ''}">${f(v, 2)}</td>`).join('') + '</tr>'
+  ).join('');
+  const sums = [0, 1, 2].map(j => M.reduce((s, row) => s + row[j], 0));
+  const sumRow = `<tr><th>Column sum</th>` + sums.map(s => `<td>${pctStr(s)}</td>`).join('') + '</tr>';
+  $('matrixOut').innerHTML =
+    `<table><thead><tr><th></th>${head}</tr></thead><tbody>${rows}${sumRow}</tbody></table>` +
+    `<p class="note">Each source column sums to 100%. Diagonal (highlighted) = population staying.</p>`;
+}
+
+/** Updates the stay percentages and matrix preview as the user types. */
+function preview(silent = false) {
+  // Stay percentages update independently of full validation
+  for (let j = 0; j < 3; j++) {
+    const outs = [(j + 1) % 3, (j + 2) % 3].map(i => parseFloat($(RATE_IDS[`${j}-${i}`]).value) || 0);
+    const out = outs[0] + outs[1];
+    const el = $('stay' + j);
+    el.textContent = out > 100 ? 'Over 100%!' : (100 - out).toFixed(1) + '%';
+  }
+  try {
+    const { names, R } = readInputs();
+    renderMatrix(buildMatrix(R), names);
+    showMsg('Each source column sums to 100%. Inputs are valid.', 'ok');
+  } catch (e) {
+    $('matrixOut').innerHTML = '<p class="note">Enter valid inputs to generate the matrix.</p>';
+    if (!silent) showMsg(e.message, 'error'); else clearMsg();
+  }
+}
+
+/** Keeps the number input and slider synchronized and clamps to 1–100. */
+function syncYears(source) {
+  let v = parseInt(source === 'range' ? $('yearsRange').value : $('yearsNum').value, 10);
+  if (!isFinite(v)) v = 10;
+  v = Math.min(100, Math.max(1, v));
+  $('yearsNum').value = v;
+  $('yearsRange').value = v;
+  return v;
+}
+
+/** Renders a 3×3 matrix as a small table for the maths section. */
+function matBlock(title, A) {
+  const rows = A.map(r => '<tr>' + r.map(x => `<td>${f(x, 4)}</td>`).join('') + '</tr>').join('');
+  return `<div class="matrix-block"><h4>${title}</h4><table><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- Simulation ---------- */
+
+let popChart = null;
+
+async function runSimulation() {
+  let data;
+  try {
+    data = readInputs();
+  } catch (e) {
+    showMsg(e.message, 'error');
+    return;
+  }
+  const years = syncYears('num');
+  $('loading').classList.add('show');
+  await delay(500); // brief loading animation
+
+  const { names, pop: P0, R } = data;
+  const M = buildMatrix(R);
+  const hist = simulate(M, P0, years);
+  const dg = diagonalize(M);
+  const Pn_power = matVec(matPow(M, years), P0);
+  const steady = steadyState(M, dg, P0);
+
+  // Consistency checks: P(n) from direct iteration vs. matrix power vs. diagonalization
+  let diagCheck = null;
+  if (dg) {
+    const Pn_diag = matVec(matPowDiag(dg, years), P0);
+    diagCheck = Math.max(...Pn_diag.map((x, i) => Math.abs(x - hist[years][i])));
+  }
+
+  renderResults({ names, P0, M, hist, years, steady, dg, Pn_power, diagCheck });
+  $('loading').classList.remove('show');
+  $('resultsEmpty').classList.add('hidden');
+  $('resultsContent').classList.remove('hidden');
+  $('results').scrollIntoView({ behavior: 'smooth' });
+  showMsg('Simulation complete.', 'ok');
+}
+
+function renderResults({ names, P0, M, hist, years, steady, dg, diagCheck }) {
+  const total0 = P0.reduce((a, b) => a + b, 0);
+  const final = hist[years];
+  const totalN = final.reduce((a, b) => a + b, 0);
+  const shares0 = P0.map(p => p / total0);
+  const sharesN = final.map(p => p / totalN);
+
+  // Summary cards
+  const cards = [
+    `<div class="card reveal"><h3>Total Population</h3><div class="val">${Math.round(totalN).toLocaleString()}</div><div class="sub">After ${years} year(s) (closed system)</div></div>`,
+    ...names.map((n, i) => {
+      const d = final[i] - P0[i];
+      return `<div class="card reveal"><h3>${esc(n)} Population</h3><div class="val">${Math.round(final[i]).toLocaleString()}</div><div class="sub">Change: ${d >= 0 ? '+' : ''}${Math.round(d).toLocaleString()}</div></div>`;
+    }),
+    (() => {
+      const diffs = sharesN.map((s, i) => s - shares0[i]);
+      const gi = diffs.indexOf(Math.max(...diffs)), li = diffs.indexOf(Math.min(...diffs));
+      return `<div class="card reveal"><h3>Population Gain / Loss</h3><div class="sub">Largest share gain: <strong>${esc(names[gi])}</strong></div><div class="sub">Largest share loss: <strong>${esc(names[li])}</strong></div></div>`;
+    })(),
+  ];
+  $('summaryCards').innerHTML = cards.join('');
+
+  // Population line chart
+  const labels = hist.map((_, t) => 'Year ' + t);
+  const colors = ['#1d4ed8', '#38bdf8', '#0b1f3a'];
+  const datasets = names.map((n, i) => ({
+    label: n,
+    data: hist.map(v => Math.round(v[i])),
+    borderColor: colors[i],
+    backgroundColor: colors[i],
+    tension: 0.3,
+  }));
+  if (popChart) popChart.destroy();
+  popChart = new Chart($('popChart'), {
+    type: 'line',
+    data: { labels: hist.map((_, t) => t), datasets },
+    options: {
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: 'Year' } },
+        y: { title: { display: true, text: 'Population' } },
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: items => 'Year ' + items[0].label,
+            label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString()}`,
+          },
+        },
+      },
+    },
+  });
+
+  // Year-by-year table
+  const yearRows = hist.map((v, t) =>
+    `<tr><td>${t}</td>${v.map(x => `<td>${Math.round(x).toLocaleString()}</td>`).join('')}<td>${Math.round(v.reduce((a, b) => a + b, 0)).toLocaleString()}</td></tr>`
+  ).join('');
+  $('yearTableWrap').innerHTML =
+    `<table><thead><tr><th>Year</th>${names.map(n => `<th>${esc(n)}</th>`).join('')}<th>Total</th></tr></thead><tbody>${yearRows}</tbody></table>`;
+
+  // Gain / loss table (compares initial and final population shares)
+  const gainRows = names.map((n, i) => {
+    const diffPts = (sharesN[i] - shares0[i]) * 100;
+    let status, cls;
+    if (Math.abs(diffPts) < 0.05) { status = 'Approximately Stable'; cls = 'status-stable'; }
+    else if (diffPts > 0) { status = 'Population Share Gain'; cls = 'status-gain'; }
+    else { status = 'Population Share Loss'; cls = 'status-loss'; }
+    return `<tr><td>${esc(n)}</td><td>${Math.round(P0[i]).toLocaleString()}</td><td>${Math.round(final[i]).toLocaleString()}</td>` +
+      `<td>${(final[i] - P0[i] >= 0 ? '+' : '') + Math.round(final[i] - P0[i]).toLocaleString()}</td>` +
+      `<td>${pctStr(shares0[i])}</td><td>${pctStr(sharesN[i])}</td><td class="${cls}">${status}</td></tr>`;
+  }).join('');
+  $('gainTableWrap').innerHTML =
+    `<table><thead><tr><th>City</th><th>Initial Population</th><th>Final Population</th><th>Change</th><th>Initial Share</th><th>Final Share</th><th>Status</th></tr></thead><tbody>${gainRows}</tbody></table>` +
+    `<p class="note">The total population is constant in this closed model, so share comparisons show relative gain or loss.</p>`;
+
+  // Steady state
+  $('steadyCards').innerHTML = names.map((n, i) =>
+    `<div class="card"><h3>${esc(n)} → ${(steady[i] * 100).toFixed(2)}%</h3><div class="sub">Long-term share</div></div>`
+  ).join('');
+  const Ms = matVec(M, steady);
+  $('steadyCheck').innerHTML =
+    `<p class="note">Check: M·P* = [${Ms.map(x => f(x, 4)).join(', ')}] ≈ P* = [${steady.map(x => f(x, 4)).join(', ')}]</p>`;
+
+  // Maths section
+  let html = '';
+  if (dg) {
+    html += `<h4>Eigenvalues</h4><p>${dg.vals.map((l, i) => `λ${i + 1} = ${f(l, 4)}`).join(' &nbsp;|&nbsp; ')}</p>`;
+    html += `<h4>Eigenvectors (unit length, as columns of P)</h4>`;
+    dg.vecs.forEach((v, i) => { html += `<p>v${i + 1} (λ = ${f(dg.vals[i], 4)}) = [${v.map(x => f(x, 4)).join(', ')}]</p>`; });
+    html += matBlock('P', dg.P) + matBlock('D', dg.D) + matBlock('P⁻¹', dg.Pinv);
+    const recon = matMul(matMul(dg.P, dg.D), dg.Pinv);
+    const reconErr = Math.max(...recon.flatMap((row, i) => row.map((x, j) => Math.abs(x - M[i][j]))));
+    html += `<p><strong>Diagonalization:</strong> M = P D P⁻¹. Maximum entry difference between P D P⁻¹ and M: <strong>${f(reconErr, 2)}</strong>, which should be essentially zero.</p>`;
+    html += `<p><strong>Matrix power:</strong> M<sup>n</sup> = P Dⁿ P⁻¹ with n = ${years}. Max difference between P(n) from diagonalization and from direct iteration: <strong>${f(diagCheck, 2)}</strong> (should be essentially zero).</p>`;
+  } else {
+    html += `<p>Diagonalization is not available for this matrix (its eigenvalues are complex or the matrix is defective). The steady state was computed by power iteration instead.</p>`;
+  }
+  html += `<h4>What does this mean?</h4>
+    <p>An <strong>eigenvector</strong> is a direction that a matrix only stretches, not rotates. The matching <strong>eigenvalue</strong> is the stretch factor. Eigenvalue 1 means that direction is unchanged by migration, and that direction is the steady-state population distribution. Diagonalization rewrites M in terms of its eigenvectors, which makes computing M<sup>n</sup> for many years much simpler.</p>`;
+  $('eigenOut').innerHTML = html;
+}
+
+/* ---------- Example and reset ---------- */
+
+function loadExample() {
+  $('name0').value = 'Riverton';   $('pop0').value = '500000';
+  $('name1').value = 'Lakeview';   $('pop1').value = '300000';
+  $('name2').value = 'Hillcrest';  $('pop2').value = '200000';
+  // Example matrix: A→B 10%, A→C 5%, B→A 5%, B→C 10%, C→A 10%, C→B 5%
+  $('r01').value = '10'; $('r02').value = '5';
+  $('r10').value = '5';  $('r12').value = '10';
+  $('r20').value = '10'; $('r21').value = '5';
+  preview();
+}
+
+function resetAll() {
+  document.querySelectorAll('input[type=text], input[type=number]').forEach(el => {
+    if (el.id !== 'yearsNum') el.value = '';
+  });
+  $('yearsNum').value = 10; $('yearsRange').value = 10;
+  for (let j = 0; j < 3; j++) $('stay' + j).textContent = '—';
+  $('matrixOut').innerHTML = '<p class="note">Enter valid inputs to generate the matrix.</p>';
+  clearMsg();
+  $('resultsContent').classList.add('hidden');
+  $('resultsEmpty').classList.remove('hidden');
+}
+
+/* ---------- Wiring ---------- */
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('menuToggle').addEventListener('click', () => $('navLinks').classList.toggle('open'));
+  document.querySelectorAll('#navLinks a').forEach(a =>
+    a.addEventListener('click', () => $('navLinks').classList.remove('open')));
+
+  document.querySelectorAll('#simulation input').forEach(el => {
+    if (el.id !== 'yearsNum' && el.id !== 'yearsRange') el.addEventListener('input', () => preview());
+  });
+
+  $('yearsRange').addEventListener('input', () => syncYears('range'));
+  $('yearsNum').addEventListener('input', () => syncYears('num'));
+
+  $('runBtn').addEventListener('click', runSimulation);
+  $('resetBtn').addEventListener('click', resetAll);
+  $('exampleBtn').addEventListener('click', loadExample);
+});
+
+</script>
+</body>
+</html>
